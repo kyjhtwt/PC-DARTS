@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from operations import *
 from torch.autograd import Variable
+import random
 from genotypes import PRIMITIVES
 from genotypes import Genotype
 
@@ -29,6 +30,7 @@ class MixedOp(nn.Module):
     self._ops = nn.ModuleList()
     self.mp = nn.MaxPool2d(2,2)
     self.k = 4
+
     for primitive in PRIMITIVES:
       op = OPS[primitive](C //self.k, stride, False)
       if 'pool' in primitive:
@@ -41,6 +43,8 @@ class MixedOp(nn.Module):
     dim_2 = x.shape[1]
     xtemp = x[ : , :  dim_2//self.k, :, :]
     xtemp2 = x[ : ,  dim_2//self.k:, :, :]
+
+
     temp1 = sum(w * op(xtemp) for w, op in zip(weights, self._ops))
     #reduction cell needs pooling before concat
     if temp1.shape[2] == x.shape[2]:
@@ -69,6 +73,7 @@ class Cell(nn.Module):
 
     self._ops = nn.ModuleList()
     self._bns = nn.ModuleList()
+    r = random.random(0, 2)
     for i in range(self._steps):
       for j in range(2+i):
         stride = 2 if reduction and j < 2 else 1
@@ -82,7 +87,7 @@ class Cell(nn.Module):
     states = [s0, s1]
     offset = 0
     for i in range(self._steps):
-      s = sum(weights2[offset+j]*self._ops[offset+j](h, weights[offset+j]) for j, h in enumerate(states))
+      s = sum(weights2[offset+j]*self._ops[offset+j](h, weights[offset+j]) for j, h in enumerate(states)) # 여기서 masking 어떻게 해야하지
       offset += len(states)
       states.append(s)
 
@@ -115,7 +120,7 @@ class Network(nn.Module):
         reduction = True
       else:
         reduction = False
-      cell = Cell(steps, multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev)
+      cell = Cell(steps, multiplier, C_prev_prev, C_prev, C_curr, reduction, reduction_prev) 
       reduction_prev = reduction
       self.cells += [cell]
       C_prev_prev, C_prev = C_prev, multiplier*C_curr
