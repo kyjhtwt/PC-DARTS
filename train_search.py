@@ -122,16 +122,17 @@ def main():
     print(F.softmax(model.betas_normal[2:5], dim=-1))
     #model.drop_path_prob = args.drop_path_prob * epoch / args.epochs
     # training
-    # # model 자체는 하나로 사용, 이때 마지막 model에 대한 train을 제외하고는 architecture parameter를 실제로 update하지 않고 가장 높은 architecture parameter만을 표시함
-    # train_acc, train_obj = train(train_queue, valid_queue, model, architect, criterion, optimizer, lr,epoch) # 여기에 target operation을 넣을 수 있어야 함 + 비최종 표시
-    # train_acc, train_obj = train(train_queue, valid_queue, model, architect, criterion, optimizer, lr,epoch) # 여기에 target operation을 넣을 수 있어야 함 + 비최종 표시
-    # train_acc, train_obj = train(train_queue, valid_queue, model, architect, criterion, optimizer, lr,epoch) # 여기에 target operation을 넣을 수 있어야 함 + 최종 표시
+    # 1안 : train을 3단계로 나눈다. 각 단계마다 주어진 operation set에 대한 훈련을 진행하고, 마지막 단계에서 뽑아낸 모델들을 가지고 다시 훈련을 진행한다.
+    # TODO: epoch에 따라 단계 나누기, 각 단계가 완료되면 각 cell에서 가장 높은 architecture parameter를 갖는 operation 뽑아내기
+    # TODO: operation 뽑아 내는건 마지막 train이 끝나고 뽑는 로직을 새로 만들어서 새로운 데이터로 저장
     
     # 2안 : train 때 마다 target operation을 랜덤으로 고른다. 랜덤으로 고른 target operation에 대해서만 architecture parameter에 대한 update가 진행된다.
     # TODO: 현재 operation set에 대해서 random하게 operation 뽑기, 뽑는 비율 : 1/2
     # TODO: target operation에 대해서만 architecture parameter update가 일어나도록 하기 -- binary gate 처럼 어떻게 못하나
     train_acc, train_obj = train(train_queue, valid_queue, model, architect, criterion, optimizer, lr,epoch)
     logging.info('train_acc %f', train_acc)
+
+
 
     # validation
     if args.epochs-epoch<=1:
